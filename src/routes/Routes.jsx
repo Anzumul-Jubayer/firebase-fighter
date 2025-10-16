@@ -6,6 +6,7 @@ import Profile from "../pages/Profile";
 import Signup from "../pages/Signup";
 import Signin from "../pages/Signin";
 
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -32,6 +33,8 @@ const router = createBrowserRouter([
         element:<Signin/>
       }
     ],
+      
   },
+   
 ]);
 export default router;

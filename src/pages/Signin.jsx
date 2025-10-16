@@ -1,30 +1,73 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router";
 import MyContainer from "../components/MyContainer";
 import { FaEye } from "react-icons/fa";
 import { IoEyeOff } from "react-icons/io5";
+import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import { auth } from "../firebase/firebase.config";
+import { toast } from "react-toastify";
 
 
-
-
-
+const googleProvider=new GoogleAuthProvider()
 const Signin = () => {
+  const [show, setShow] = useState(false);
+  const [user, setUser] = useState(null);
 
-
-  const handleSignin = () => {
-   
+  const handleSignin = (event) => {
+    event.preventDefault();
+    const email = event.target.email.value;
+    const password = event.target.password.value;
+    console.log("entered", email, password);
+    const regEx =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|;:'",.<>/?`~\\]).{8,}$/;
+    if (!regEx.test(password)) {
+      return toast.error(
+        "Password must be 8+ chars with uppercase, lowercase, number & symbol."
+      
+      );
+    }
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        setUser(user);
+        console.log(user);
+        toast.success("Sign-In successful");
+      })
+      .catch((err) => {
+        console.log(err);
+        
+        toast.error(err.message);
+      });
   };
 
   const handleGoogleSignin = () => {
-   
-     
+    signInWithPopup(auth,googleProvider)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        setUser(user);
+        console.log(user);
+        toast.success("Sign-In successful");
+      })
+      .catch((err) => {
+        console.log(err);
+        toast.error(err.message);
+      });
   };
 
   const handleSignout = () => {
-   
+        signOut(auth)
+        .then(()=>{
+          setUser(null)
+          toast.success("Signout successful")
+        })
+        .catch((err) => {
+        console.log(err);
+        toast.error(err.message);
+      });
   };
 
-
+  console.log(user);
 
   return (
     <div className="min-h-[calc(100vh-20px)] flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 relative overflow-hidden">
@@ -49,7 +92,14 @@ const Signin = () => {
 
           {/* Login card */}
           <div className="w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
-            
+            {user ? (
+              <div className="text-center space-y-3">
+                <img src={user?.photoURL || "photo"} alt="" className="h-20 w-20 rounded-full mx-auto" />
+                <h2 className="font-semibold text-xl">{user?.displayName}</h2>
+                <p className=" text-white/80">{user?.email}</p>
+                <button onClick={handleSignout} className="my-btn">Sign Out</button>
+              </div>
+            ) : (
               <form onSubmit={handleSignin} className="space-y-5">
                 <h2 className="text-2xl font-semibold mb-2 text-center text-white">
                   Sign In
@@ -68,16 +118,17 @@ const Signin = () => {
                 <div className="relative">
                   <label className="block text-sm mb-1">Password</label>
                   <input
-                    type={'text'}
+                    type={show ? "text" : "password"}
                     name="password"
                     placeholder="••••••••"
                     className="input input-bordered w-full bg-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
+
                   <span
-                    
-                    className="absolute right-[8px] top-[36px] cursor-pointer z-50"
+                    onClick={() => setShow(!show)}
+                    className="absolute right-[8px] top-[36px] cursor-pointer z-50 "
                   >
-                   
+                    {show ? <AiFillEye /> : <AiFillEyeInvisible />}
                   </span>
                 </div>
 
@@ -116,7 +167,7 @@ const Signin = () => {
                   </Link>
                 </p>
               </form>
-            
+            )}
           </div>
         </div>
       </MyContainer>
