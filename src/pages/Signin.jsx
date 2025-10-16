@@ -4,12 +4,16 @@ import MyContainer from "../components/MyContainer";
 import { FaEye } from "react-icons/fa";
 import { IoEyeOff } from "react-icons/io5";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
-import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut } from "firebase/auth";
+import {
+  GoogleAuthProvider,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 import { auth } from "../firebase/firebase.config";
 import { toast } from "react-toastify";
 
-
-const googleProvider=new GoogleAuthProvider()
+const googleProvider = new GoogleAuthProvider();
 const Signin = () => {
   const [show, setShow] = useState(false);
   const [user, setUser] = useState(null);
@@ -24,7 +28,6 @@ const Signin = () => {
     if (!regEx.test(password)) {
       return toast.error(
         "Password must be 8+ chars with uppercase, lowercase, number & symbol."
-      
       );
     }
     signInWithEmailAndPassword(auth, email, password)
@@ -36,13 +39,26 @@ const Signin = () => {
       })
       .catch((err) => {
         console.log(err);
-        
-        toast.error(err.message);
+        if (err.code === "auth/user-not-found") {
+          toast.error("No account found with this email.");
+        } else if (err.code === "auth/wrong-password") {
+          toast.error("Incorrect password.");
+        } else if (err.code === "auth/invalid-email") {
+          toast.error("Invalid email address.");
+        } else if (err.code === "auth/user-disabled") {
+          toast.error("Account has been disabled.");
+        } else if (err.code === "auth/too-many-requests") {
+          toast.error("Too many attempts. Try again later.");
+        } else if (err.code === "auth/network-request-failed") {
+          toast.error("Network error. Check your connection.");
+        } else {
+          toast.error(err.message);
+        }
       });
   };
 
   const handleGoogleSignin = () => {
-    signInWithPopup(auth,googleProvider)
+    signInWithPopup(auth, googleProvider)
       .then((userCredential) => {
         const user = userCredential.user;
         setUser(user);
@@ -56,12 +72,12 @@ const Signin = () => {
   };
 
   const handleSignout = () => {
-        signOut(auth)
-        .then(()=>{
-          setUser(null)
-          toast.success("Signout successful")
-        })
-        .catch((err) => {
+    signOut(auth)
+      .then(() => {
+        setUser(null);
+        toast.success("Signout successful");
+      })
+      .catch((err) => {
         console.log(err);
         toast.error(err.message);
       });
@@ -94,10 +110,16 @@ const Signin = () => {
           <div className="w-full max-w-md backdrop-blur-lg bg-white/10 border border-white/20 shadow-2xl rounded-2xl p-8">
             {user ? (
               <div className="text-center space-y-3">
-                <img src={user?.photoURL || "photo"} alt="" className="h-20 w-20 rounded-full mx-auto" />
+                <img
+                  src={user?.photoURL || "photo"}
+                  alt=""
+                  className="h-20 w-20 rounded-full mx-auto"
+                />
                 <h2 className="font-semibold text-xl">{user?.displayName}</h2>
                 <p className=" text-white/80">{user?.email}</p>
-                <button onClick={handleSignout} className="my-btn">Sign Out</button>
+                <button onClick={handleSignout} className="my-btn">
+                  Sign Out
+                </button>
               </div>
             ) : (
               <form onSubmit={handleSignin} className="space-y-5">
