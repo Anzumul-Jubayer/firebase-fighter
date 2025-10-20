@@ -1,26 +1,39 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import MyContainer from "../components/MyContainer";
-import {  sendEmailVerification, updateProfile } from "firebase/auth";
-
 import { toast } from "react-toastify";
 import { useContext, useState } from "react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { AuthContext } from "../context/AuthContext";
 
 const Signup = () => {
-  const {createUser}=useContext(AuthContext)
+  const {
+    createUser,
+    updateProfileFunc,
+    sendVerificationMail,
+    SetLoading,
+    signOutFunc,
+    setUser,
+    user
+  } = useContext(AuthContext);
+
   const [show, setShow] = useState(false);
+  const navigate = useNavigate();
+  if(user){
+    return navigate('/')
+  }
   const handleSignup = (event) => {
     event.preventDefault();
-    const name = event.target.name.value;
-    const photo = event.target.photo.value;
+    SetLoading(true); // start loader
+
+    const displayName = event.target.name.value;
+    const photoURL = event.target.photo.value;
     const email = event.target.email.value;
     const password = event.target.password.value;
-    
 
     const regEx =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|;:'",.<>/?`~\\]).{8,}$/;
     if (!regEx.test(password)) {
+      SetLoading(false);
       return toast.error(
         "Password must be 8+ chars with uppercase, lowercase, number & symbol."
       );
@@ -29,22 +42,34 @@ const Signup = () => {
     createUser(email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        updateProfile(user, {
-          displayName: name,
-          photoURL: photo,
-        }).then(()=>{
-        sendEmailVerification(user)
-        .then(()=>{
-          toast.success("Signup successful.Check Your email to active your account");
-          event.target.reset()
-        }).catch((err)=>{
-          toast.error(err.message)
-        })
-        
-        }).catch((err)=>{
-          toast.error(err.message)
-        })
-        
+        updateProfileFunc(user, displayName, photoURL)
+          .then(() => {
+            sendVerificationMail(user)
+              .then(() => {
+                event.target.reset();
+                signOutFunc()
+                  .then(() => {
+                    setUser(null);
+                    toast.success(
+                      "Signup successful. Check your email to activate your account"
+                    );
+                    navigate("/signin");
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                    toast.error(err.message);
+                  })
+                  .finally(() => SetLoading(false)); // stop loader after signout
+              })
+              .catch((err) => {
+                toast.error(err.message);
+                SetLoading(false); // stop loader on error
+              });
+          })
+          .catch((err) => {
+            toast.error(err.message);
+            SetLoading(false); // stop loader on error
+          });
       })
       .catch((err) => {
         console.log(err);
@@ -72,9 +97,7 @@ const Signup = () => {
           toast.error("Something went wrong. Try again.");
         } else if (err.code === "auth/popup-closed-by-user") {
           toast.error("Sign-in was cancelled.");
-        } else if (
-          err.code === "auth/account-exists-with-different-credential"
-        ) {
+        } else if (err.code === "auth/account-exists-with-different-credential") {
           toast.error(
             "This email is already linked with another sign-in method."
           );
@@ -85,6 +108,8 @@ const Signup = () => {
         } else {
           toast.error(err.message);
         }
+
+        SetLoading(false); // stop loader on error
       });
   };
 
