@@ -1,18 +1,22 @@
 import { Link } from "react-router";
 import MyContainer from "../components/MyContainer";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/firebase.config";
+import {  sendEmailVerification, updateProfile } from "firebase/auth";
+
 import { toast } from "react-toastify";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
+import { AuthContext } from "../context/AuthContext";
 
 const Signup = () => {
+  const {createUser}=useContext(AuthContext)
   const [show, setShow] = useState(false);
   const handleSignup = (event) => {
     event.preventDefault();
+    const name = event.target.name.value;
+    const photo = event.target.photo.value;
     const email = event.target.email.value;
     const password = event.target.password.value;
-    console.log("entered", email, password);
+    
 
     const regEx =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|;:'",.<>/?`~\\]).{8,}$/;
@@ -22,11 +26,25 @@ const Signup = () => {
       );
     }
 
-    createUserWithEmailAndPassword(auth, email, password)
+    createUser(email, password)
       .then((userCredential) => {
         const user = userCredential.user;
-        console.log(user);
-        toast.success("Signup successful");
+        updateProfile(user, {
+          displayName: name,
+          photoURL: photo,
+        }).then(()=>{
+        sendEmailVerification(user)
+        .then(()=>{
+          toast.success("Signup successful.Check Your email to active your account");
+          event.target.reset()
+        }).catch((err)=>{
+          toast.error(err.message)
+        })
+        
+        }).catch((err)=>{
+          toast.error(err.message)
+        })
+        
       })
       .catch((err) => {
         console.log(err);
@@ -96,6 +114,24 @@ const Signup = () => {
             </h2>
 
             <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="your name"
+                  className="input input-bordered w-full bg-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Photo</label>
+                <input
+                  type="text"
+                  name="photo"
+                  placeholder="photo url"
+                  className="input input-bordered w-full bg-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-pink-400"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Email</label>
                 <input
